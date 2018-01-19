@@ -208,8 +208,8 @@ void I2C_Initialize(void)
     SSPSTAT = 0x00;
     // SSPEN enabled; WCOL no_collision; CKP disabled; SSPM FOSC/4_SSPxADD_I2C; SSPOV no_overflow; 
     SSPCON1 = 0x28;
-    // Baud Rate Generator Value: SSPADD 3;   
-    SSPADD = 0x03;
+    // Baud Rate Generator Value: SSPADD 9;   
+    SSPADD = 0x09;
 
    
     // clear the master interrupt flag
@@ -679,12 +679,13 @@ void I2C_MasterTRBInsert(
     // for interrupt based
     if (*pflag == I2C_MESSAGE_PENDING)
     {
-        while(i2c_state != S_MASTER_IDLE);
+        do
         {
             // force the task to run since we know that the queue has
             // something that needs to be sent
             PIR1bits.SSPIF = true;
-        }
+            __delay_us(100);
+        }while(i2c_state != S_MASTER_IDLE);
     }   // block until request is complete
 
 }

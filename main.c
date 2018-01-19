@@ -61,26 +61,18 @@ void main(void)
     CIOCONbits.ENDRHI = 1;  // enable drive high (CANTX drives VDD when recessive)
     
     uint8_t BNO055_address;
-    BNO055_address = BNO055_ADDRESS_B;
-    BNO055_Initialize();
+    BNO055_address = BNO055_Initialize();
     uCAN_MSG BNO055_data;
-    uint8_t linear_accel_x_MSB = 0x55, linear_accel_x_LSB = 0x55, linear_accel_y_MSB = 0x55,
-            linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x55, linear_accel_z_LSB = 0x55;
+    uint8_t linear_accel_x_MSB = 0x05, linear_accel_x_LSB = 0x55, linear_accel_y_MSB = 0x05,
+            linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
     uint8_t *data, *buffer;
-    data[0] = 0x0;
-    data[1] = 0x0;
-    data[2] = 0x0;
-    data[3] = 0x0;
-    data[4] = 0x0;
-    data[5] = 0x0;
     uint8_t *writeBuffer;
     I2C_MESSAGE_STATUS flag;
-    uint16_t timeOut = 0, counter = 0;
-    bool fail = false, complete = false, overflow = false;
+//    bool fail = false, complete = false, overflow = false;
 //    RC0 = 1;
 //    RC1 = 1;
 //    RC2 = 1;
-    
+    //
     // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
     // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
     // Use the following macros to:
@@ -111,94 +103,29 @@ void main(void)
 
     while (1)
     {
-        // Add your application code
-        /** G sensor */
-        while (flag != I2C_MESSAGE_FAIL && timeOut < BNO055_MAX_RETRY) {
-            while (I2C_MasterQueueIsFull() == true);
-            writeBuffer[0] = BNO055_SYS_TRIGGER_ADDR;
-            writeBuffer[1] = 0x20;
-            flag = I2C_MESSAGE_PENDING;
-            I2C_MasterWrite ( writeBuffer, 1, BNO055_address, &flag );
-            while ( flag == I2C_MESSAGE_PENDING );
-            if (flag == I2C_MESSAGE_COMPLETE)   timeOut = BNO055_MAX_RETRY;
-            timeOut ++;
-        }
-        buffer[0] = data[0];
-        timeOut = 0;
-        
-        while (flag != I2C_MESSAGE_FAIL && timeOut < BNO055_MAX_RETRY) {
-            while (I2C_MasterQueueIsFull() == true);
-            writeBuffer[0] = BNO055_CHIP_ID_ADDR;
-            flag = I2C_MESSAGE_PENDING;
-            I2C_MasterWrite ( writeBuffer, 1, BNO055_address, &flag );
-            while ( flag == I2C_MESSAGE_PENDING );
-            if (flag == I2C_MESSAGE_COMPLETE)   timeOut = BNO055_MAX_RETRY;
-            timeOut ++;
-        }
-        buffer[1] = data[0];
-        if (flag == I2C_MESSAGE_COMPLETE) {
-            flag = I2C_MESSAGE_PENDING;
-            I2C_MasterRead ( data, 1, BNO055_address, &flag );
-            while ( flag == I2C_MESSAGE_PENDING );
-        }
-        timeOut = 0;
-        
-        //set to 9 degrees of freedom mode
-        while (flag != I2C_MESSAGE_FAIL && timeOut < BNO055_MAX_RETRY) {
-            while ( I2C_MasterQueueIsEmpty() == false );
-            writeBuffer[0] = BNO055_OPR_MODE_ADDR;
-            writeBuffer[1] = OPERATION_MODE_NDOF;
-            I2C_MasterWrite ( writeBuffer, 2, BNO055_address, &flag );
-            while (flag == I2C_MESSAGE_PENDING);
-            if (flag == I2C_MESSAGE_COMPLETE) {
-                timeOut = BNO055_MAX_RETRY;
-            }
-            timeOut++;
-        }
-        timeOut = 0;
-        buffer[2] = data[0];
-        buffer[3] = data[1];
-        buffer[4] = data[2];
-        buffer[5] = data[3];
-        buffer[6] = data[4];
-        buffer[7] = data[5];
-        
-        //read linear acceleration data for 3 axis
-        while (flag != I2C_MESSAGE_FAIL && timeOut < BNO055_MAX_RETRY){
-            while ( I2C_MasterQueueIsEmpty() == false );
-            writeBuffer[0] = BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR;
-            flag = I2C_MESSAGE_PENDING;
-            I2C_MasterWrite (writeBuffer, 1, BNO055_address, &flag);
-            while (flag == I2C_MESSAGE_PENDING);
-            if (flag == I2C_MESSAGE_COMPLETE)   timeOut = BNO055_MAX_RETRY;
-            timeOut++;
-        }
-        timeOut = 0;
-        
-        while (I2C_MasterQueueIsEmpty() == false);
-        flag = I2C_MESSAGE_PENDING;
-        I2C_MasterRead (data, 6, BNO055_address, &flag);
-        while (flag == I2C_MESSAGE_PENDING);
-        
-        linear_accel_x_LSB = data[0];
-        linear_accel_x_MSB = data[1];
-        linear_accel_y_LSB = data[2];
-        linear_accel_y_MSB = data[3];
-        linear_accel_z_LSB = data[4];
-        linear_accel_z_MSB = data[5];
-        
-        if (counter > 100)       RC0 = 1;    else    RC0 = 0;
-        if (complete)   RC1 = 1;    else    RC1 = 0;
-        if (data[0] != buffer[2] && data[1] != buffer[3] && data[2] != buffer[4]
-                && data[3] != buffer[5] && data[4] != buffer[6] && data[5] != buffer[7]) {
-            RC2 = 1;
-        }else    RC2 = 0;
-        fail = false;
-        complete = false;
-        overflow = false;
+//        // Add your application code
+//        /** G sensor */
+//        //read linear acceleration data for 3 axis
+//        while ( I2C_MasterQueueIsEmpty() == false );
+//        writeBuffer[0] = BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR;
+//        flag = I2C_MESSAGE_PENDING;
+//        I2C_MasterWrite (writeBuffer, 1, BNO055_address, &flag);
+//        while (flag == I2C_MESSAGE_PENDING);
+//        
+//        while (I2C_MasterQueueIsEmpty() == false);
+//        flag = I2C_MESSAGE_PENDING;
+//        I2C_MasterRead (data, 6, BNO055_address, &flag);
+//        while (flag == I2C_MESSAGE_PENDING);
+//        
+//        linear_accel_x_LSB = data[0];
+//        linear_accel_x_MSB = data[1];
+//        linear_accel_y_LSB = data[2];
+//        linear_accel_y_MSB = data[3];
+//        linear_accel_z_LSB = data[4];
+//        linear_accel_z_MSB = data[5];
         
         BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
-        BNO055_data.frame.id = 0x131;
+        BNO055_data.frame.id = 0x634;
         BNO055_data.frame.dlc = 6;
         BNO055_data.frame.data0 = linear_accel_x_MSB;
         BNO055_data.frame.data1 = linear_accel_x_LSB;
@@ -208,7 +135,6 @@ void main(void)
         BNO055_data.frame.data5 = linear_accel_z_LSB;
         
         CAN_transmit(&BNO055_data);
-        counter++;
     }
 }
 /**
