@@ -53,6 +53,7 @@ void I2C_Master_RepeatedStart();
 void I2C_Master_Stop();
 void I2C_Master_Write(uint8_t d);
 void I2C_Master_Read(unsigned short a, uint8_t *data);
+void BNO055Initialize();
 
 /*
                          Main application
@@ -68,7 +69,7 @@ void main(void)
     CIOCONbits.ENDRHI = 1;  // enable drive high (CANTX drives VDD when recessive)
     
     uint8_t BNO055_address;
-//    BNO055_address = BNO055_Initialize();
+    BNO055Initialize();
     uCAN_MSG BNO055_data;
     uint8_t linear_accel_x_MSB = 0x05, linear_accel_x_LSB = 0x55, linear_accel_y_MSB = 0x05,
             linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
@@ -133,12 +134,12 @@ void main(void)
         I2C_Master_Start();
         I2C_Master_Write(0x50);
         I2C_Master_Write(BNO055_OPR_MODE_ADDR);
-        I2C_Master_Write(OPERATION_MODE_NDOF);
+        I2C_Master_Write(OPERATION_MODE_ACCONLY);
         I2C_Master_Stop();
         
         I2C_Master_Start();
         I2C_Master_Write(0x50);
-        I2C_Master_Write(BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR);
+        I2C_Master_Write(BNO055_ACCEL_DATA_X_LSB_ADDR);
         I2C_Master_Stop();
         
         I2C_Master_Start();         //Start condition
@@ -154,14 +155,14 @@ void main(void)
         linear_accel_z_MSB = data[5];
         
         BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
-        BNO055_data.frame.id = 0x634;
+        BNO055_data.frame.id = 0x471;
         BNO055_data.frame.dlc = 6;
-        BNO055_data.frame.data0 = linear_accel_x_MSB;
-        BNO055_data.frame.data1 = linear_accel_x_LSB;
+        BNO055_data.frame.data0 = linear_accel_z_MSB;
+        BNO055_data.frame.data1 = linear_accel_z_LSB;
         BNO055_data.frame.data2 = linear_accel_y_MSB;
         BNO055_data.frame.data3 = linear_accel_y_LSB;
-        BNO055_data.frame.data4 = linear_accel_z_MSB;
-        BNO055_data.frame.data5 = linear_accel_z_LSB;
+        BNO055_data.frame.data4 = linear_accel_x_MSB;
+        BNO055_data.frame.data5 = linear_accel_x_LSB;
         
         CAN_transmit(&BNO055_data);
     }
@@ -210,6 +211,51 @@ void I2C_Master_Read(unsigned short a, uint8_t *data)
     ACKDT = (i < a)?0:1;
     ACKEN = 1;
   }
+}
+
+void BNO055Initialize()
+{
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_OPR_MODE_ADDR);
+    I2C_Master_Write(OPERATION_MODE_CONFIG);
+    I2C_Master_Stop();
+    
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
+    I2C_Master_Write(0x20);
+    I2C_Master_Stop();
+    
+    __delay_ms(20);
+    
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_PWR_MODE_ADDR);
+    I2C_Master_Write(POWER_MODE_NORMAL);
+    I2C_Master_Stop();
+    
+    __delay_ms(20);
+    
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_PAGE_ID_ADDR);
+    I2C_Master_Write(0x0);
+    I2C_Master_Stop();
+    
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_UNIT_SEL_ADDR);
+    I2C_Master_Write(0x1);
+    I2C_Master_Stop();
+    
+    I2C_Master_Start();
+    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
+    I2C_Master_Write(0x00);
+    I2C_Master_Stop();
+    
+    __delay_ms(20);
 }
 /**
  End of File
