@@ -114,23 +114,6 @@ void main(void)
 //        // Add your application code
 //        /** G sensor */
 //        //read linear acceleration data for 3 axis
-//        while ( I2C_MasterQueueIsEmpty() == false );
-//        writeBuffer[0] = BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR;
-//        flag = I2C_MESSAGE_PENDING;
-//        I2C_MasterWrite (writeBuffer, 1, BNO055_address, &flag);
-//        while (flag == I2C_MESSAGE_PENDING);
-//        
-//        while (I2C_MasterQueueIsEmpty() == false);
-//        flag = I2C_MESSAGE_PENDING;
-//        I2C_MasterRead (data, 6, BNO055_address, &flag);
-//        while (flag == I2C_MESSAGE_PENDING);
-//        
-//        linear_accel_x_LSB = data[0];
-//        linear_accel_x_MSB = data[1];
-//        linear_accel_y_LSB = data[2];
-//        linear_accel_y_MSB = data[3];
-//        linear_accel_z_LSB = data[4];
-//        linear_accel_z_MSB = data[5];
         I2C_Master_Start();
         I2C_Master_Write(0x50);
         I2C_Master_Write(BNO055_OPR_MODE_ADDR);
