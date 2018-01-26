@@ -45,8 +45,6 @@
 
 #include "mcc_generated_files/mcc.h"
 
-#define BNO055_MAX_RETRY 50
-
 void I2C_Master_Wait();
 void I2C_Master_Start();
 void I2C_Master_RepeatedStart();
@@ -54,6 +52,10 @@ void I2C_Master_Stop();
 void I2C_Master_Write(uint8_t d);
 void I2C_Master_Read(unsigned short a, uint8_t *data);
 void BNO055Initialize();
+void CAN_TRANSMISSION();
+
+uint8_t linear_accel_x_MSB = 0x05, linear_accel_x_LSB = 0x55, linear_accel_y_MSB = 0x05,
+        linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
 
 /*
                          Main application
@@ -70,12 +72,11 @@ void main(void)
     
     uint8_t BNO055_address;
     BNO055Initialize();
-    uCAN_MSG BNO055_data;
-    uint8_t linear_accel_x_MSB = 0x05, linear_accel_x_LSB = 0x55, linear_accel_y_MSB = 0x05,
-            linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
     uint8_t *data;
     uint8_t *writeBuffer;
     I2C_MESSAGE_STATUS flag;
+    
+    TMR1_SetInterruptHandler(&CAN_TRANSMISSION);
 //    bool fail = false, complete = false, overflow = false;
 //    RC0 = 1;
 //    RC1 = 1;
@@ -98,13 +99,13 @@ void main(void)
     //INTERRUPT_GlobalInterruptLowDisable();
 
     // Enable the Global Interrupts
-//    INTERRUPT_GlobalInterruptEnable();
+    INTERRUPT_GlobalInterruptEnable();
 
     // Disable the Global Interrupts
     //INTERRUPT_GlobalInterruptDisable();
 
     // Enable the Peripheral Interrupts
-//    INTERRUPT_PeripheralInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();
 
     // Disable the Peripheral Interrupts
     //INTERRUPT_PeripheralInterruptDisable();
@@ -136,18 +137,6 @@ void main(void)
         linear_accel_y_MSB = data[3];
         linear_accel_z_LSB = data[4];
         linear_accel_z_MSB = data[5];
-        
-        BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
-        BNO055_data.frame.id = 0x471;
-        BNO055_data.frame.dlc = 6;
-        BNO055_data.frame.data0 = linear_accel_z_MSB;
-        BNO055_data.frame.data1 = linear_accel_z_LSB;
-        BNO055_data.frame.data2 = linear_accel_y_MSB;
-        BNO055_data.frame.data3 = linear_accel_y_LSB;
-        BNO055_data.frame.data4 = linear_accel_x_MSB;
-        BNO055_data.frame.data5 = linear_accel_x_LSB;
-        
-        CAN_transmit(&BNO055_data);
     }
 }
 
@@ -198,12 +187,14 @@ void I2C_Master_Read(unsigned short a, uint8_t *data)
 
 void BNO055Initialize()
 {
+    // set to config mode
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_OPR_MODE_ADDR);
     I2C_Master_Write(OPERATION_MODE_CONFIG);
     I2C_Master_Stop();
     
+    // reset BNO055
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
@@ -212,6 +203,7 @@ void BNO055Initialize()
     
     __delay_ms(20);
     
+    // set power mode to normal
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_PWR_MODE_ADDR);
@@ -220,18 +212,21 @@ void BNO055Initialize()
     
     __delay_ms(20);
     
+    // set BNO055 page to 0
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_PAGE_ID_ADDR);
     I2C_Master_Write(0x0);
     I2C_Master_Stop();
     
+    // set unit of acceleration to G
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_UNIT_SEL_ADDR);
     I2C_Master_Write(0x1);
     I2C_Master_Stop();
     
+    // clear system trigger register
     I2C_Master_Start();
     I2C_Master_Write(0x50);
     I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
@@ -239,6 +234,22 @@ void BNO055Initialize()
     I2C_Master_Stop();
     
     __delay_ms(20);
+}
+
+void CAN_TRANSMISSION() {
+    uCAN_MSG BNO055_data;
+            
+    BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
+    BNO055_data.frame.id = 0x471;
+    BNO055_data.frame.dlc = 6;
+    BNO055_data.frame.data0 = linear_accel_z_MSB;
+    BNO055_data.frame.data1 = linear_accel_z_LSB;
+    BNO055_data.frame.data2 = linear_accel_y_MSB;
+    BNO055_data.frame.data3 = linear_accel_y_LSB;
+    BNO055_data.frame.data4 = linear_accel_x_MSB;
+    BNO055_data.frame.data5 = linear_accel_x_LSB;
+
+    CAN_transmit(&BNO055_data);
 }
 /**
  End of File

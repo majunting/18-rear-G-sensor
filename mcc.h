@@ -50,6 +50,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "interrupt_manager.h"
+#include "tmr1.h"
 #include "ecan.h"
 #include "i2c.h"
 #include "../BNO055.h"
@@ -83,7 +84,6 @@ void SYSTEM_Initialize(void);
  */
 void OSCILLATOR_Initialize(void);
 
-uint8_t BNO055_Initialize(void);
 
 
 #endif	/* MCC_H */
