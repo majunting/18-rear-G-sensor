@@ -57,9 +57,13 @@ void  INTERRUPT_Initialize (void)
 void interrupt INTERRUPT_InterruptManager (void)
 {
     // interrupt handler
-    if(INTCONbits.PEIE == 1 && PIE1bits.TMR1IE == 1 && PIR1bits.TMR1IF == 1)
+    if(INTCONbits.PEIE == 1 && PIE2bits.BCLIE == 1 && PIR2bits.BCLIF == 1)
     {
-        TMR1_ISR();
+        I2C_BusCollisionISR();
+    }
+    else if(INTCONbits.PEIE == 1 && PIE1bits.SSPIE == 1 && PIR1bits.SSPIF == 1)
+    {
+        I2C_ISR();
     }
     else
     {
