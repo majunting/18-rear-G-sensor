@@ -106,8 +106,6 @@
 // CONFIG7H
 #pragma config EBTRB = OFF    // Table Read Protect Boot->Disabled
 
-#define BNO055_MAX_RETRY 100
-
 #include "mcc.h"
 
 void SYSTEM_Initialize(void)
@@ -117,6 +115,8 @@ void SYSTEM_Initialize(void)
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     I2C_Initialize();
+    TMR2_Initialize();
+    TMR1_Initialize();
     ECAN_Initialize();
 }
 

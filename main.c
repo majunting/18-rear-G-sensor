@@ -45,7 +45,8 @@
 
 #include "mcc_generated_files/mcc.h"
 
-#define BNO055_MAX_RETRY 50
+#define BNO055_Write_Address 0x50
+#define BNO055_Read_Address 0x51
 
 void I2C_Master_Wait();
 void I2C_Master_Start();
@@ -75,7 +76,6 @@ void main(void)
             linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
     uint8_t *data;
     uint8_t *writeBuffer;
-    uint16_t cur_timer;
 //    bool fail = false, complete = false, overflow = false;
 //    RC0 = 1;
 //    RC1 = 1;
@@ -98,13 +98,13 @@ void main(void)
     //INTERRUPT_GlobalInterruptLowDisable();
 
     // Enable the Global Interrupts
-//    INTERRUPT_GlobalInterruptEnable();
+    INTERRUPT_GlobalInterruptEnable();
 
     // Disable the Global Interrupts
     //INTERRUPT_GlobalInterruptDisable();
 
     // Enable the Peripheral Interrupts
-//    INTERRUPT_PeripheralInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();
 
     // Disable the Peripheral Interrupts
     //INTERRUPT_PeripheralInterruptDisable();
@@ -112,46 +112,47 @@ void main(void)
     while (1)
     {
         // Add your application code
-        TMR1_Reload();
-        cur_timer = TMR1_ReadTimer();
-        /** G sensor */
-        //read linear acceleration data for 3 axis
-        I2C_Master_Start();
-        I2C_Master_Write(0x50);
-        I2C_Master_Write(BNO055_OPR_MODE_ADDR);
-        I2C_Master_Write(OPERATION_MODE_ACCONLY);
-        I2C_Master_Stop();
-        
-        I2C_Master_Start();
-        I2C_Master_Write(0x50);
-        I2C_Master_Write(BNO055_ACCEL_DATA_X_LSB_ADDR);
-        I2C_Master_Stop();
-        
-        I2C_Master_Start();         //Start condition
-        I2C_Master_Write(0x51);     //7 bit address + Read
-        I2C_Master_Read(6, data); //Read + Acknowledge
-        I2C_Master_Stop();          //Stop condition
-        
-        linear_accel_x_LSB = data[0];
-        linear_accel_x_MSB = data[1];
-        linear_accel_y_LSB = data[2];
-        linear_accel_y_MSB = data[3];
-        linear_accel_z_LSB = data[4];
-        linear_accel_z_MSB = data[5];
-        
-        BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
-        BNO055_data.frame.id = 0x471;
-        BNO055_data.frame.dlc = 6;
-        BNO055_data.frame.data0 = linear_accel_z_MSB;
-        BNO055_data.frame.data1 = linear_accel_z_LSB;
-        BNO055_data.frame.data2 = linear_accel_y_MSB;
-        BNO055_data.frame.data3 = linear_accel_y_LSB;
-        BNO055_data.frame.data4 = linear_accel_x_MSB;
-        BNO055_data.frame.data5 = linear_accel_x_LSB;
-        
-        CAN_transmit(&BNO055_data);
-        
-        while (TMR1_ReadTimer() < cur_timer + 1);
+        if(TMR2_GetTransmit){
+            /** G sensor */
+            //read linear acceleration data for 3 axis
+            I2C_Master_Start();
+            I2C_Master_Write(BNO055_Write_Address);
+            I2C_Master_Write(BNO055_OPR_MODE_ADDR);
+            I2C_Master_Write(OPERATION_MODE_ACCONLY);
+            I2C_Master_Stop();
+
+            I2C_Master_Start();
+            I2C_Master_Write(BNO055_Write_Address);
+            I2C_Master_Write(BNO055_ACCEL_DATA_X_LSB_ADDR);
+            I2C_Master_Stop();
+
+            I2C_Master_Start();         //Start condition
+            I2C_Master_Write(BNO055_Read_Address);     //7 bit address + Read
+            I2C_Master_Read(6, data); //Read + Acknowledge
+            I2C_Master_Stop();          //Stop condition
+
+            linear_accel_x_LSB = data[0];
+            linear_accel_x_MSB = data[1];
+            linear_accel_y_LSB = data[2];
+            linear_accel_y_MSB = data[3];
+            linear_accel_z_LSB = data[4];
+            linear_accel_z_MSB = data[5];
+
+            BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
+            BNO055_data.frame.id = 0x471;
+            BNO055_data.frame.dlc = 6;
+            BNO055_data.frame.data0 = linear_accel_z_MSB;
+            BNO055_data.frame.data1 = linear_accel_z_LSB;
+            BNO055_data.frame.data2 = linear_accel_y_MSB;
+            BNO055_data.frame.data3 = linear_accel_y_LSB;
+            BNO055_data.frame.data4 = linear_accel_x_MSB;
+            BNO055_data.frame.data5 = linear_accel_x_LSB;
+
+            CAN_transmit(&BNO055_data);
+            
+            TMR2_ClearTransmit();
+            INTERRUPT_PeripheralInterruptEnable();
+        }
     }
 }
 
@@ -203,13 +204,13 @@ void I2C_Master_Read(unsigned short a, uint8_t *data)
 void BNO055Initialize()
 {
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_OPR_MODE_ADDR);
     I2C_Master_Write(OPERATION_MODE_CONFIG);
     I2C_Master_Stop();
     
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
     I2C_Master_Write(0x20);
     I2C_Master_Stop();
@@ -217,7 +218,7 @@ void BNO055Initialize()
     __delay_ms(20);
     
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_PWR_MODE_ADDR);
     I2C_Master_Write(POWER_MODE_NORMAL);
     I2C_Master_Stop();
@@ -225,19 +226,19 @@ void BNO055Initialize()
     __delay_ms(20);
     
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_PAGE_ID_ADDR);
     I2C_Master_Write(0x0);
     I2C_Master_Stop();
     
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_UNIT_SEL_ADDR);
     I2C_Master_Write(0x1);
     I2C_Master_Stop();
     
     I2C_Master_Start();
-    I2C_Master_Write(0x50);
+    I2C_Master_Write(BNO055_Write_Address);
     I2C_Master_Write(BNO055_SYS_TRIGGER_ADDR);
     I2C_Master_Write(0x00);
     I2C_Master_Stop();
