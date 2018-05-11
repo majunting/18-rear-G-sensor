@@ -76,10 +76,6 @@ void main(void)
             linear_accel_y_LSB = 0x55, linear_accel_z_MSB = 0x05, linear_accel_z_LSB = 0x55;
     uint8_t *data;
     uint8_t *writeBuffer;
-//    bool fail = false, complete = false, overflow = false;
-//    RC0 = 1;
-//    RC1 = 1;
-//    RC2 = 1;
     //
     // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
     // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
@@ -131,12 +127,18 @@ void main(void)
             I2C_Master_Read(6, data); //Read + Acknowledge
             I2C_Master_Stop();          //Stop condition
 
-            linear_accel_x_LSB = data[0];
-            linear_accel_x_MSB = data[1];
-            linear_accel_y_LSB = data[2];
-            linear_accel_y_MSB = data[3];
-            linear_accel_z_LSB = data[4];
-            linear_accel_z_MSB = data[5];
+            if (data[1] <= 0x0F){ //check if the acceleration data are acceptable
+              linear_accel_x_LSB = data[0];
+              linear_accel_x_MSB = data[1];
+            }
+            if (data[3] <= 0x0F){
+              linear_accel_y_LSB = data[2];
+              linear_accel_y_MSB = data[3];
+            }
+            if (data[5] <= 0x0F){
+              linear_accel_z_LSB = data[4];
+              linear_accel_z_MSB = data[5];
+            }
 
             BNO055_data.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
             BNO055_data.frame.id = 0x471;
